@@ -30,19 +30,33 @@ def extract_max_page():
     return hh_pages[-1] #забираем последний элемент списка в котором указана последняя страница
                         #это и будет агрументом для функции которая проходит по всем страницам
 
+def extract_job(html): #Создали функцию чтобы код был более читаемым. Функция работает с блоком описания вакансии
+    link = html.find('a')['href'] #получаем значение по атрибуту
+    title_job = html.find('a').text  # текст заголовка
+    # company_name в переменой храним все названия компании из вакансии
+    company_name = html.find('div', {'class': 'vacancy-serp-item__meta-info-company'}).find('a').text
+    company_name = company_name.strip()
+    location = html.find('div', {'data-qa': 'vacancy-serp__vacancy-address'}).text #поиск тега по атрибуту
+    location = location.partition(',')[0] #разбиваем строку с адресом и забираем только город
+    #функция возвращает словарь где хранятся названия вакансии, название компании
+    return {'title': title_job, 'company': company_name, 'location': location, 'link': link}
+
+
 
 #Функция по сбору вакансий со страницы
-def extract_text_vacancy(last_page):
+def extract_block_vacancy(last_page):
     jobs = []
-    # for page in range(last_page):  # находим все страницы
-    result = requests.get(f'{hh_url}&page=0', headers=headers)# находим все страницы
-    soup = BeautifulSoup(result.text, 'html.parser') #парсим полученные страницы
-    results_head = soup.find_all('div', {"class": 'vacancy-serp-item-body'}) #находим все блоки с заголовками
-    # results_body = soup.find_all('div', {"class": 'vacancy-serp-item__info'})
-    # print(results_body)
+    for page in range(last_page):  # находим все страницы
+        print(f"парсинг страницы {page}")
+        result = requests.get(f'{hh_url}&page={page}', headers=headers)# находим все страницы
+        soup = BeautifulSoup(result.text, 'html.parser') #парсим полученные страницы
+        results_head = soup.find_all('div', {"class": 'vacancy-serp-item-body'}) #находим все блоки с заголовками
 
-    for result in results_head: #В блоках находим все заголовки
-        title_job = (result.find('a').text) #текст заголовка
-        print(title_job)
+
+        for result_block_vacancy in results_head: #В блоках находим все заголовки. Каждая переменная result содержит в себе блок вакансии
+            job = extract_job(result_block_vacancy)
+            jobs.append(job) # добавляем каждый словарь в список
+
+
 
     return jobs
